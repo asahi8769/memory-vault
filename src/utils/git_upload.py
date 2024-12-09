@@ -237,7 +237,7 @@ def upload_to_github():
         print("변경사항 커밋하는 중...")
         run_git_command(["git", "add", "-A"])  # 모든 파일 추가 (삭제된 파일도 포함)
         run_git_command(["git", "commit", "-m", commit_message])
-        run_git_command(["git", "branch", "-M", "master"])  # master 대신 main 사용
+        run_git_command(["git", "branch", "-M", "main"])  # master 대신 main 사용
         
         # remote 확인 및 설정
         try:
