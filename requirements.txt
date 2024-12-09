@@ -1,0 +1,19 @@
+# Google API related
+google-auth==2.25.2
+google-auth-oauthlib==1.2.0
+google-api-python-client==2.111.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Build tools
+pyinstaller==6.3.0
+
+# Image processing
+Pillow==10.1.0
+
+# Git operations
+GitPython==3.1.40
+
+# Utilities
+requests==2.31.0
