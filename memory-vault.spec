@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['C:\\Users\\asahi\\PycharmProjects\\memory-vault\\main.py'],
+    ['C:\\Users\\asahi\\projects\\memory-vault\\main.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:\\Users\\asahi\\PycharmProjects\\memory-vault\\credentials/*', 'memory-vault/credentials')],
+    datas=[('C:\\Users\\asahi\\projects\\memory-vault\\credentials/*', 'memory-vault/credentials')],
     hiddenimports=['google.auth.transport.requests'],
     hookspath=[],
     hooksconfig={},
@@ -36,4 +36,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     uac_admin=True,
+    icon=['C:\\Users\\asahi\\projects\\memory-vault\\ico\\memory-vault.ico'],
 )

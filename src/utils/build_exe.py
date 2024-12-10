@@ -51,16 +51,18 @@ def build_exe():
     try:
         # Try to convert icon if it exists, but continue even if it fails
         if os.path.exists(os.path.join(project_root, "ico", "icon.webp")):
-            from . import icon_converter
+            import icon_converter
             if icon_converter.convert_webp_to_ico():
-                command.insert(-2, f"--icon={icon_path}")
+                command.insert(-1, f"--icon={icon_path}")
             
+        print('\n',command)
         subprocess.run(command, check=True)
         print("빌드 완료")
         return True
         
     except Exception as e:
         print(f"빌드 실패: {str(e)}")
+        raise
         return False
 
 if __name__ == "__main__":

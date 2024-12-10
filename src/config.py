@@ -34,7 +34,7 @@ class Config:
     
     # Google Drive settings
     DRIVE_FOLDER_NAME: str = 'claude-memory'
-    DEFAULT_MIME_TYPE: str = 'application/json'
+    DEFAULT_MIME_TYPE: str = 'text/plain'  # Changed from 'application/json' to 'text/plain'
     
     # Backup settings
     BACKUP_PATHS: List[str] = None  # Optional: Add paths if needed
