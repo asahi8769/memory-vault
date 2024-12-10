@@ -86,7 +86,7 @@ class DriveBackupManager:
             raise Exception(f"백업 중에 문제가 생겼어ㅠㅠ: {str(e)}")
     
     def _backup_existing_file(self, service, folder_id):
-        """기존 파일이 있다면 날짜 붙여서 백업"""
+        """기존 파일을 복사하여 타임스탬프가 있는 백업 생성"""
         results = service.files().list(
             q=f"name='memory.json' and '{folder_id}' in parents",
             spaces='drive'
@@ -96,19 +96,21 @@ class DriveBackupManager:
             existing_file = results['files'][0]
             backup_name = f"memory_{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
             
-            service.files().update(
+            # 기존 파일을 복사하여 새로운 이름으로 저장
+            service.files().copy(
                 fileId=existing_file['id'],
-                body={'name': backup_name}
+                body={'name': backup_name, 'parents': [folder_id]}
             ).execute()
             
-            logger.info(f"Existing file backed up as: {backup_name}")
+            logger.info(f"Created backup copy: {backup_name}")
     
     def _upload_new_file(self, service, source_path, folder_id):
-        """새 파일 업로드"""
-        file_metadata = {
-            'name': 'memory.json',
-            'parents': [folder_id]
-        }
+        """새 파일 업로드 또는 기존 파일 업데이트"""
+        # 기존 파일 찾기
+        results = service.files().list(
+            q=f"name='memory.json' and '{folder_id}' in parents",
+            spaces='drive'
+        ).execute()
         
         media = MediaFileUpload(
             source_path,
@@ -116,13 +118,27 @@ class DriveBackupManager:
             resumable=True
         )
         
-        file = service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields='id'
-        ).execute()
+        if results.get('files'):
+            # 기존 파일이 있으면 업데이트
+            existing_file = results['files'][0]
+            file = service.files().update(
+                fileId=existing_file['id'],
+                media_body=media
+            ).execute()
+            logger.info("Existing file updated successfully")
+        else:
+            # 새 파일 생성
+            file_metadata = {
+                'name': 'memory.json',
+                'parents': [folder_id]
+            }
+            file = service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id'
+            ).execute()
+            logger.info("New file created successfully")
         
-        logger.info("New file uploaded successfully")
         return file.get('id')
 
 
