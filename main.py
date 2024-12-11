@@ -14,13 +14,14 @@ import ctypes
 load_dotenv()
 project_name = os.getenv('PROJECT_NAME')
 
+# 구글 API 클라이언트의 불필요한 경고 메시지 숨기기
+googleapiclient_logger.setLevel(logging.ERROR)
+logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
+
 def show_message_box(title, message, style=0):
     """메시지 박스 표시 (exe 모드에서만)"""
     if getattr(sys, 'frozen', False):
         return ctypes.windll.user32.MessageBoxW(0, message, title, style)
-
-# 구글 API 클라이언트의 불필요한 경고 메시지 숨기기
-googleapiclient_logger.setLevel(logging.ERROR)
 
 # Get the application path (works for both script and frozen exe)
 if getattr(sys, 'frozen', False):

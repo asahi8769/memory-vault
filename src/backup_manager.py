@@ -108,88 +108,16 @@ class DriveBackupManager:
         """
         requests = []
         
-        # 제목 추가
+        # JSON 데이터를 문자열로 변환하되, 들여쓰기 적용
+        json_content = json.dumps(memory_data, ensure_ascii=False, indent=2)
+        
+        # JSON 내용을 그대로 문서에 삽입
         requests.append({
             'insertText': {
                 'location': {'index': 1},
-                'text': f"Memory Vault Backup\n생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                'text': json_content
             }
         })
-        
-        # 제목 스타일 적용
-        requests.append({
-            'updateParagraphStyle': {
-                'range': {'startIndex': 1, 'endIndex': 17},
-                'paragraphStyle': {
-                    'namedStyleType': 'HEADING_1',
-                    'alignment': 'CENTER'
-                },
-                'fields': 'namedStyleType,alignment'
-            }
-        })
-        
-        current_index = len("Memory Vault Backup\n생성일시: YYYY-MM-DD HH:MM:SS\n\n")
-        
-        # 엔티티 섹션
-        requests.append({
-            'insertText': {
-                'location': {'index': current_index},
-                'text': "=== 엔티티 ===\n\n"
-            }
-        })
-        current_index += len("=== 엔티티 ===\n\n")
-        
-        # 엔티티 내용 추가
-        for entity in memory_data.get('entities', []):
-            entity_text = (f"엔티티: {entity.get('name', 'Unknown')}\n"
-                         f"유형: {entity.get('entityType', 'Unknown')}\n"
-                         "관찰:\n")
-            
-            requests.append({
-                'insertText': {
-                    'location': {'index': current_index},
-                    'text': entity_text
-                }
-            })
-            current_index += len(entity_text)
-            
-            for obs in entity.get('observations', []):
-                obs_text = f"- {obs}\n"
-                requests.append({
-                    'insertText': {
-                        'location': {'index': current_index},
-                        'text': obs_text
-                    }
-                })
-                current_index += len(obs_text)
-            
-            requests.append({
-                'insertText': {
-                    'location': {'index': current_index},
-                    'text': "\n"
-                }
-            })
-            current_index += 1
-        
-        # 관계 섹션
-        requests.append({
-            'insertText': {
-                'location': {'index': current_index},
-                'text': "=== 관계 ===\n\n"
-            }
-        })
-        current_index += len("=== 관계 ===\n\n")
-        
-        # 관계 내용 추가
-        for relation in memory_data.get('relations', []):
-            relation_text = f"{relation.get('from', 'Unknown')} -> {relation.get('relationType', 'Unknown')} -> {relation.get('to', 'Unknown')}\n"
-            requests.append({
-                'insertText': {
-                    'location': {'index': current_index},
-                    'text': relation_text
-                }
-            })
-            current_index += len(relation_text)
         
         return requests
 
@@ -215,8 +143,17 @@ class DriveBackupManager:
                 file_content = file.read()
                 memory_data = self.parse_memory_file(file_content)
 
-            # 기존 파일 백업 처리
-            self._backup_existing_file(self.drive_service, folder_id)
+            # 폴더 내 모든 파일 확인
+            results = self.drive_service.files().list(
+                q=f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.document'",
+                spaces='drive'
+            ).execute()
+
+            if results.get('files'):  # 폴더에 파일이 있으면
+                memory_exists = any(file['name'] == 'memory' for file in results['files'])
+                if memory_exists:
+                    # memory 파일이 있으면 백업 처리
+                    self._backup_existing_file(self.drive_service, folder_id)
             
             # 새 문서 생성 또는 업데이트
             return self._create_or_update_doc(memory_data, folder_id)
@@ -228,13 +165,13 @@ class DriveBackupManager:
     def _backup_existing_file(self, service, folder_id):
         """기존 파일을 복사하여 타임스탬프가 있는 백업 생성"""
         results = service.files().list(
-            q=f"name='memory.doc' and '{folder_id}' in parents and mimeType='application/vnd.google-apps.document'",
+            q=f"name='memory' and '{folder_id}' in parents and mimeType='application/vnd.google-apps.document'",
             spaces='drive'
         ).execute()
         
         if results.get('files'):
             existing_file = results['files'][0]
-            backup_name = f"memory_{datetime.now().strftime('%Y%m%d%H%M%S')}.doc"
+            backup_name = f"memory_{datetime.now().strftime('%Y%m%d%H%M%S')}"
             
             # 기존 파일을 복사하여 새로운 이름으로 저장
             service.files().copy(
@@ -248,7 +185,7 @@ class DriveBackupManager:
         """새 문서 생성 또는 기존 문서 업데이트"""
         # 기존 문서 찾기
         results = self.drive_service.files().list(
-            q=f"name='memory.doc' and '{folder_id}' in parents and mimeType='application/vnd.google-apps.document'",
+            q=f"name='memory' and '{folder_id}' in parents and mimeType='application/vnd.google-apps.document'",
             spaces='drive'
         ).execute()
 
@@ -287,7 +224,7 @@ class DriveBackupManager:
         else:
             # 새 문서 생성
             doc = self.docs_service.documents().create(
-                body={'title': 'memory.doc'}
+                body={'title': 'memory'}  # .doc 확장자 제거
             ).execute()
             
             # 문서를 지정된 폴더로 이동
